@@ -1,0 +1,843 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>Home Energy Log</title>
+<meta name="theme-color" content="#f2f4f6" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0e1318" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Energy Log">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,700&family=Figtree:wght@400;500;600&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<style>
+/* Layout: single column tool. Summary first, then log a reading, trend, periods, tariffs, settings. Electric = amber, gas = flame blue. */
+:root{
+  --bg:#f2f4f6; --surface:#ffffff; --sunk:#e8ecf0; --ink:#16202a; --muted:#5a6876; --line:#dbe1e7;
+  --elec:#d99a06; --elec-ink:#8a5d00; --elec-soft:#fbefcf;
+  --gas:#2a63c8; --gas-ink:#1f4f9f; --gas-soft:#dde8fb;
+  --danger:#b42318; --ok:#1d7a46;
+  --meter-bg:#1b232c; --meter-ink:#f4f1e6;
+  --f-display:"Bricolage Grotesque",ui-sans-serif,system-ui,sans-serif;
+  --f-body:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#0e1318; --surface:#171e26; --sunk:#10161c; --ink:#e5ebf1; --muted:#93a1ae; --line:#29333e;
+  --elec:#f2b532; --elec-ink:#f2b532; --elec-soft:#3a2f12;
+  --gas:#6fa2ff; --gas-ink:#8fb6ff; --gas-soft:#17284a;
+  --danger:#ff7b6b; --ok:#53c98a; --meter-bg:#06090c; --meter-ink:#f4f1e6; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0e1318; --surface:#171e26; --sunk:#10161c; --ink:#e5ebf1; --muted:#93a1ae; --line:#29333e;
+  --elec:#f2b532; --elec-ink:#f2b532; --elec-soft:#3a2f12;
+  --gas:#6fa2ff; --gas-ink:#8fb6ff; --gas-soft:#17284a;
+  --danger:#ff7b6b; --ok:#53c98a; --meter-bg:#06090c; --meter-ink:#f4f1e6; color-scheme:dark}
+
+*{box-sizing:border-box}
+:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+[hidden]{display:none!important}
+img{max-width:100%}
+body{margin:0;-webkit-text-size-adjust:100%;background:var(--bg);color:var(--ink);font-family:var(--f-body);font-size:15px;line-height:1.5}
+.wrap{max-width:760px;margin:0 auto;padding-block:20px 56px;padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:28px}
+h1,h2,h3{font-family:var(--f-display);margin:0;text-wrap:balance;letter-spacing:-.01em}
+h1{font-size:1.9rem;line-height:1.1}
+h2{font-size:1.25rem}
+h3{font-size:1rem}
+.num{font-variant-numeric:tabular-nums}
+.muted{color:var(--muted)}
+.label{font-size:.72rem;text-transform:uppercase;letter-spacing:.08em;color:var(--muted);font-weight:600}
+section{display:flex;flex-direction:column;gap:12px}
+.sec-head{display:flex;justify-content:space-between;align-items:baseline;gap:12px;flex-wrap:wrap}
+
+header{display:flex;flex-direction:column;gap:14px}
+.headline{display:flex;flex-wrap:wrap;gap:6px 20px;align-items:baseline}
+.big{font-family:var(--f-display);font-size:2.4rem;font-weight:700;line-height:1}
+.big small{font-size:1rem;font-weight:600;color:var(--muted);margin-left:4px}
+.storage-note{font-size:.8rem;color:var(--muted)}
+
+.banner{display:flex;gap:12px;align-items:center;justify-content:space-between;flex-wrap:wrap;background:var(--sunk);border:1px dashed var(--line);border-radius:10px;padding:10px 14px;font-size:.9rem}
+
+.fuels{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:14px}
+.fuel{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:12px;min-width:0;border-top:4px solid var(--c)}
+.fuel.elec{--c:var(--elec);--ci:var(--elec-ink);--cs:var(--elec-soft)}
+.fuel.gas{--c:var(--gas);--ci:var(--gas-ink);--cs:var(--gas-soft)}
+.fuel-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.fuel-name{display:flex;gap:8px;align-items:center;color:var(--ci)}
+.fuel-name svg{width:20px;height:20px}
+.meter{font-family:var(--f-mono);background:var(--meter-bg);color:var(--meter-ink);border-radius:6px;padding:3px 8px;font-size:.9rem;letter-spacing:.12em;font-variant-numeric:tabular-nums}
+.stats{display:grid;grid-template-columns:1fr 1fr;gap:10px 14px}
+.stat{display:flex;flex-direction:column;gap:2px;min-width:0}
+.stat b{font-size:1.15rem;font-weight:600;font-variant-numeric:tabular-nums}
+.stat span.sub{font-size:.8rem;color:var(--muted)}
+.fuel .empty{font-size:.9rem;color:var(--muted)}
+
+.card{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:16px;display:flex;flex-direction:column;gap:14px}
+form{display:flex;flex-direction:column;gap:12px}
+.row{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.field{display:flex;flex-direction:column;gap:5px;min-width:0}
+.field label{font-size:.82rem;font-weight:600;color:var(--muted)}
+input,select{font:inherit;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px 11px;width:100%;min-width:0}
+input:focus-visible,select:focus-visible,button:focus-visible{outline:2px solid var(--gas);outline-offset:2px}
+input.reading{font-family:var(--f-mono);font-size:1.15rem;letter-spacing:.1em;background:var(--meter-bg);color:var(--meter-ink);border-color:var(--meter-bg)}
+.hint{font-size:.8rem;color:var(--muted)}
+.hint.warn{color:var(--danger)}
+.seg{display:flex;background:var(--sunk);border-radius:10px;padding:3px;gap:3px}
+.seg label{flex:1;text-align:center;padding:8px;border-radius:8px;cursor:pointer;font-weight:600;color:var(--muted);font-size:.92rem}
+.seg input{position:absolute;opacity:0;width:1px;height:1px}
+.seg input:checked+span{color:var(--ink)}
+.seg label:has(input:checked){background:var(--surface);box-shadow:0 1px 2px rgb(0 0 0 / .12)}
+.seg label:has(input:focus-visible){outline:2px solid var(--gas)}
+.check{display:flex;gap:8px;align-items:center;font-size:.92rem}
+.check input{width:auto}
+
+button{font:inherit;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:var(--surface);color:var(--ink);padding:9px 14px;font-weight:600}
+button.primary{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+button.small{padding:5px 10px;font-size:.82rem}
+button.ghost{background:transparent}
+button.danger{color:var(--danger)}
+button.confirm{background:var(--danger);color:#fff;border-color:var(--danger)}
+button:disabled{opacity:.5;cursor:default}
+
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{border-radius:999px;padding:5px 12px;font-size:.85rem}
+.chip[aria-pressed="true"]{background:var(--ink);color:var(--surface);border-color:var(--ink)}
+
+.chart-box{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:14px 10px 8px}
+.legend{display:flex;gap:14px;padding:0 6px 6px;font-size:.82rem;color:var(--muted)}
+.legend i{display:inline-block;width:10px;height:10px;border-radius:2px;margin-right:6px;vertical-align:-1px}
+#chart svg{display:block;width:100%}
+#chart text{font-family:var(--f-body);font-size:11px;fill:var(--muted)}
+
+.table-wrap{overflow-x:auto;background:var(--surface);border:1px solid var(--line);border-radius:14px}
+table{border-collapse:collapse;width:100%;font-size:.88rem;font-variant-numeric:tabular-nums}
+th,td{padding:10px 12px;text-align:right;white-space:nowrap;border-bottom:1px solid var(--line)}
+th{font-size:.72rem;text-transform:uppercase;letter-spacing:.06em;color:var(--muted);font-weight:600;background:var(--sunk)}
+th:first-child,td:first-child{text-align:left}
+tr:last-child td{border-bottom:0}
+td .tag{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:8px}
+td.total{font-weight:600}
+tr.bad td{color:var(--danger)}
+.ex{font-size:.7rem;color:var(--muted);border:1px solid var(--line);border-radius:4px;padding:0 4px;margin-left:6px}
+
+.list{display:flex;flex-direction:column}
+.item{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);flex-wrap:wrap}
+.item:last-child{border-bottom:0}
+.item .main{display:flex;flex-direction:column;min-width:0}
+.item .main b{font-weight:600}
+.pill{font-size:.72rem;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--cs);color:var(--ci)}
+.pill.elec{--cs:var(--elec-soft);--ci:var(--elec-ink)}
+.pill.gas{--cs:var(--gas-soft);--ci:var(--gas-ink)}
+.pill.now{background:var(--ok);color:var(--surface)}
+.tcard{border-top:4px solid var(--c)}
+.tcard.elec{--c:var(--elec)} .tcard.gas{--c:var(--gas)}
+.delta{display:block;font-size:.75rem;font-weight:600}
+.delta.up{color:var(--danger)} .delta.down{color:var(--ok)} .delta.same{color:var(--muted)}
+tr.current td{background:var(--sunk)}
+tfoot td{border-top:1px solid var(--line);border-bottom:0;background:var(--sunk);font-weight:600}
+td .sub{display:block;font-size:.75rem;color:var(--muted)}
+details{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:4px 16px}
+details[open]{padding-bottom:16px}
+summary{cursor:pointer;padding:10px 0;font-family:var(--f-display);font-weight:600;font-size:1.05rem}
+.formula{font-family:var(--f-mono);font-size:.8rem;background:var(--sunk);padding:8px 10px;border-radius:8px;overflow-x:auto}
+
+.btns{display:flex;gap:10px;flex-wrap:wrap}
+.backup-age{font-size:.85rem}
+.backup-age.stale{color:var(--danger);font-weight:600}
+#toast{position:fixed;left:50%;bottom:calc(18px + env(safe-area-inset-bottom,0px));transform:translateX(-50%);background:var(--ink);color:var(--surface);padding:10px 16px;border-radius:10px;font-weight:600;font-size:.9rem;max-width:calc(100% - 32px);z-index:20}
+#toast.err{background:var(--danger);color:#fff}
+@media (prefers-reduced-motion:no-preference){#toast{transition:opacity .2s}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <div>
+      <div class="label">Gas &amp; electricity</div>
+      <h1>Home Energy Log</h1>
+    </div>
+    <div id="headline" class="headline"><span class="muted">Loading your readings…</span></div>
+    <div id="storage" class="storage-note"></div>
+  </header>
+
+  <div id="banner" class="banner" hidden>
+    <span>The readings shown are examples so you can see how it works.</span>
+    <button id="clearEx" class="small">Clear examples</button>
+  </div>
+
+  <section aria-labelledby="h-sum">
+    <h2 id="h-sum" class="label" style="font-family:var(--f-body);font-size:.72rem">Summary</h2>
+    <div id="fuels" class="fuels"></div>
+  </section>
+
+  <section aria-labelledby="h-add">
+    <h2 id="h-add">Add a meter reading</h2>
+    <div class="card">
+      <form id="readingForm" novalidate>
+        <div class="seg" role="radiogroup" aria-label="Meter">
+          <label><input type="radio" name="rfuel" id="rf-elec" value="elec" checked><span>Electricity</span></label>
+          <label><input type="radio" name="rfuel" id="rf-gas" value="gas"><span>Gas</span></label>
+        </div>
+        <div class="row">
+          <div class="field"><label for="rdate">Date</label><input type="date" id="rdate" required></div>
+          <div class="field"><label for="rval" id="rvalLabel">Reading (kWh)</label><input class="reading" type="number" inputmode="decimal" step="any" min="0" id="rval" placeholder="00000" required></div>
+        </div>
+        <div id="rhint" class="hint"></div>
+        <div><button class="primary" type="submit" id="rsave">Save reading</button></div>
+      </form>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-trend">
+    <div class="sec-head"><h2 id="h-trend">Cost per day</h2><span class="hint">Average daily cost between readings, incl. standing charge</span></div>
+    <div class="chart-box">
+      <div class="legend"><span><i style="background:var(--elec)"></i>Electricity</span><span><i style="background:var(--gas)"></i>Gas</span></div>
+      <div id="chart"></div>
+    </div>
+  </section>
+
+  <section aria-labelledby="h-per">
+    <div class="sec-head">
+      <h2 id="h-per">Billing periods</h2>
+      <div class="chips" role="group" aria-label="Filter periods">
+        <button class="chip small" data-f="all" aria-pressed="true">Both</button>
+        <button class="chip small" data-f="elec" aria-pressed="false">Electricity</button>
+        <button class="chip small" data-f="gas" aria-pressed="false">Gas</button>
+      </div>
+    </div>
+    <div class="table-wrap" id="periods"></div>
+  </section>
+
+  <section aria-labelledby="h-hist">
+    <div class="sec-head">
+      <h2 id="h-hist">Usage history</h2>
+      <div class="chips" role="group" aria-label="Group history by">
+        <button class="chip small hchip" data-h="month" aria-pressed="true">Monthly</button>
+        <button class="chip small hchip" data-h="year" aria-pressed="false">Yearly</button>
+      </div>
+    </div>
+    <p class="hint" style="margin:0">Usage between two readings is spread evenly across those days, then priced at the tariff for each day. Change compares cost per day, so part-logged months stay fair.</p>
+    <div class="chart-box">
+      <div class="legend"><span><i style="background:var(--elec)"></i>Electricity</span><span><i style="background:var(--gas)"></i>Gas</span></div>
+      <div id="histChart"></div>
+    </div>
+    <div class="table-wrap" id="history"></div>
+  </section>
+
+  <section aria-labelledby="h-tar">
+    <h2 id="h-tar">Unit rates &amp; standing charges</h2>
+    <p class="hint" style="margin:0">Add a new tariff whenever your prices change. Each one applies from its start date until the next, so older periods keep their old prices.</p>
+    <div class="seg" role="radiogroup" aria-label="Fuel">
+      <label><input type="radio" name="tfuel" id="tf-elec" value="elec" checked><span>Electricity</span></label>
+      <label><input type="radio" name="tfuel" id="tf-gas" value="gas"><span>Gas</span></label>
+    </div>
+    <div class="card tcard" id="tcard">
+      <div class="sec-head"><h3 id="tHead">Electricity tariff history</h3><span id="tCount" class="hint"></span></div>
+      <div id="tariffs" class="table-wrap" style="border:0;border-radius:0"></div>
+      <form id="tariffForm" novalidate style="border-top:1px solid var(--line);padding-top:14px">
+        <h3 id="tFormHead">Add an electricity tariff</h3>
+        <div class="row">
+          <div class="field"><label for="tname">Name (optional)</label><input id="tname" maxlength="60" placeholder="e.g. Fixed 12m"></div>
+          <div class="field"><label for="tfrom">Starts on</label><input type="date" id="tfrom" required></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="tunit" id="tunitLabel">Electricity unit rate (p per kWh)</label><input type="number" inputmode="decimal" step="any" min="0" id="tunit" required></div>
+          <div class="field"><label for="tstand" id="tstandLabel">Electricity standing charge (p per day)</label><input type="number" inputmode="decimal" step="any" min="0" id="tstand" required></div>
+        </div>
+        <div id="thint" class="hint"></div>
+        <div><button class="primary" type="submit" id="tsave">Add electricity tariff</button></div>
+      </form>
+    </div>
+  </section>
+
+  <details id="settingsBox">
+    <summary>Meter &amp; VAT settings</summary>
+    <form id="settingsForm" novalidate>
+      <div class="row">
+        <div class="field"><label for="sgu">Gas meter units</label>
+          <select id="sgu"><option value="m3">Cubic metres (m³)</option><option value="ft3">Hundreds of cubic feet (ft³)</option><option value="kwh">kWh (smart display)</option></select></div>
+        <div class="field"><label for="scv">Calorific value (MJ/m³)</label><input type="number" step="any" min="30" max="50" id="scv"></div>
+      </div>
+      <div class="formula" id="formula"></div>
+      <label class="check"><input type="checkbox" id="svinc"> My rates already include VAT</label>
+      <div class="row">
+        <div class="field"><label for="svat">VAT rate (%)</label><input type="number" step="any" min="0" max="30" id="svat"></div>
+      </div>
+      <div><button class="primary" type="submit">Save settings</button></div>
+    </form>
+  </details>
+
+  <details id="backupBox">
+    <summary>Back up &amp; restore</summary>
+    <div style="display:flex;flex-direction:column;gap:12px">
+      <p class="hint" style="margin:0">Your readings are stored only on this phone. Save a backup file now and then — to iCloud Drive, Google Drive or email — so you can restore them if you change phone or clear your browser.</p>
+      <div id="backupAge" class="backup-age"></div>
+      <div class="btns">
+        <button class="primary" id="exportBtn" type="button">Save backup file</button>
+        <button id="copyBtn" type="button">Copy backup as text</button>
+      </div>
+      <div class="field"><label for="importFile">Restore from a backup file</label><input type="file" id="importFile" accept=".json,application/json,text/plain"></div>
+      <div class="field"><label for="importText">…or paste backup text</label><textarea id="importText" rows="3" style="font:inherit;font-family:var(--f-mono);font-size:.8rem;color:var(--ink);background:var(--bg);border:1px solid var(--line);border-radius:8px;padding:10px;width:100%"></textarea></div>
+      <div class="btns"><button id="importBtn" type="button">Restore</button></div>
+      <p class="hint" style="margin:0">Restoring replaces everything currently in the app.</p>
+    </div>
+  </details>
+</div>
+<div id="toast" role="status" aria-live="polite" hidden></div>
+
+<script>
+(() => {
+  const FUELS = {
+    elec: { name: "Electricity", color: "var(--elec)" },
+    gas:  { name: "Gas", color: "var(--gas)" }
+  };
+  const DEFAULT_SETTINGS = { gasUnit: "m3", cv: 39.5, vatIncluded: true, vat: 5 };
+  const state = { readings: [], tariffs: [], settings: { ...DEFAULT_SETTINGS }, mode: null, loaded: { r: false, t: false, s: false }, filter: "all" };
+  let db = null;
+  const LKEY = "home-energy-log-v1";
+  const $ = id => document.getElementById(id);
+
+  /* ---------- dates & formatting ---------- */
+  const todayStr = () => { const d = new Date(); return d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0") + "-" + String(d.getDate()).padStart(2,"0"); };
+  const toUTC = s => { const [y,m,d] = s.split("-").map(Number); return Date.UTC(y, m-1, d); };
+  const fromUTC = t => new Date(t).toISOString().slice(0,10);
+  const dayDiff = (a,b) => Math.round((toUTC(b) - toUTC(a)) / 864e5);
+  const addDays = (s,n) => fromUTC(toUTC(s) + n*864e5);
+  const fmtDate = (s, yr) => new Date(toUTC(s)).toLocaleDateString("en-GB", { day: "numeric", month: "short", year: yr ? "numeric" : undefined, timeZone: "UTC" });
+  const gbp = p => (p/100).toLocaleString("en-GB", { style: "currency", currency: "GBP" });
+  const n1 = v => v.toLocaleString("en-GB", { maximumFractionDigits: 1, minimumFractionDigits: 1 });
+  const n0 = v => v.toLocaleString("en-GB", { maximumFractionDigits: 0 });
+  const meterFmt = v => v.toLocaleString("en-GB", { maximumFractionDigits: 3 });
+  const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" })[c]);
+
+  /* ---------- energy maths ---------- */
+  function unitLabel(fuel){
+    if (fuel === "elec") return "kWh";
+    return { m3: "m³", ft3: "ft³ ×100", kwh: "kWh" }[state.settings.gasUnit] || "m³";
+  }
+  function toKwh(fuel, units){
+    if (fuel === "elec") return units;
+    const s = state.settings;
+    if (s.gasUnit === "kwh") return units;
+    const m3 = s.gasUnit === "ft3" ? units * 2.83 : units;
+    return m3 * 1.02264 * (Number(s.cv) || 39.5) / 3.6;
+  }
+  const tariffsFor = fuel => state.tariffs.filter(t => t.fuel === fuel).sort((a,b) => a.from < b.from ? -1 : a.from > b.from ? 1 : 0);
+  function tariffAt(list, day){
+    let cur = list[0];
+    for (const t of list) { if (t.from <= day) cur = t; else break; }
+    return cur;
+  }
+  function vatFactor(){ const s = state.settings; return s.vatIncluded ? 1 : 1 + (Number(s.vat) || 0) / 100; }
+  function costFor(fuel, start, days, kwh){
+    const list = tariffsFor(fuel);
+    if (!list.length || days <= 0) return null;
+    let energy = 0, standing = 0; const perDay = kwh / days;
+    for (let i = 0; i < days; i++) { const t = tariffAt(list, addDays(start, i)); energy += perDay * t.unit; standing += t.standing; }
+    const f = vatFactor();
+    return { energy: energy * f, standing: standing * f, total: (energy + standing) * f };
+  }
+  function analyse(fuel){
+    const rs = state.readings.filter(r => r.fuel === fuel).sort((a,b) => a.date < b.date ? -1 : a.date > b.date ? 1 : 0);
+    const periods = [];
+    for (let i = 1; i < rs.length; i++) {
+      const a = rs[i-1], b = rs[i];
+      const days = dayDiff(a.date, b.date);
+      const units = b.value - a.value;
+      const p = { fuel, from: a.date, to: b.date, days, units, example: a.example || b.example };
+      if (days <= 0) { p.error = "Two readings on the same day"; }
+      else if (units < 0) { p.error = "Reading went down. Check for a typo or meter change"; }
+      else { p.kwh = toKwh(fuel, units); p.cost = costFor(fuel, a.date, days, p.kwh); }
+      periods.push(p);
+    }
+    const good = periods.filter(p => p.cost);
+    const totDays = good.reduce((s,p) => s + p.days, 0);
+    const totCost = good.reduce((s,p) => s + p.cost.total, 0);
+    const totKwh = good.reduce((s,p) => s + p.kwh, 0);
+    const last = rs[rs.length-1] || null;
+    const lastGood = good[good.length-1] || null;
+    let sinceDays = last ? dayDiff(last.date, todayStr()) : 0, sinceEst = null;
+    if (last && lastGood && sinceDays > 0) {
+      const kwh = lastGood.kwh / lastGood.days * sinceDays;
+      sinceEst = costFor(fuel, last.date, sinceDays, kwh);
+    }
+    return { rs, periods, good, totDays, totCost, totKwh, last, lastGood, sinceDays, sinceEst,
+      perDay: totDays ? totCost / totDays : null, kwhDay: totDays ? totKwh / totDays : null };
+  }
+
+  /* ---------- rendering ---------- */
+  const ICON = {
+    elec: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M13 2 4 14h6l-1 8 9-12h-6l1-8z"/></svg>',
+    gas: '<svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 2c1 4 6 6.5 6 12a6 6 0 0 1-12 0c0-3 1.6-4.8 3-6 .2 2 1 3.2 2.3 3.8C11 9 10.6 5.3 12 2z"/></svg>'
+  };
+
+  function render(){
+    const A = { elec: analyse("elec"), gas: analyse("gas") };
+    renderHeadline(A); renderFuels(A); renderChart(A); renderPeriods(A); renderHistory(A); renderTariffs(A); renderReadingHint(); renderSettingsForm();
+    $("banner").hidden = !state.readings.some(r => r.example);
+    renderBackupAge();
+  }
+
+  function renderHeadline(A){
+    const el = $("headline");
+    const both = ["elec","gas"].filter(f => A[f].perDay != null);
+    if (!both.length) { el.innerHTML = '<span class="muted">Add two readings for a meter to start seeing costs.</span>'; return; }
+    const perDay = both.reduce((s,f) => s + A[f].perDay, 0);
+    const total = both.reduce((s,f) => s + A[f].totCost, 0);
+    el.innerHTML = `<div><div class="big num">${gbp(perDay * 30.44)}<small>/ month</small></div><div class="hint">Estimated from your average daily cost${both.length < 2 ? " (" + FUELS[both[0]].name.toLowerCase() + " only)" : ""}</div></div>
+      <div><div class="label">Tracked so far</div><div class="num" style="font-weight:600;font-size:1.1rem">${gbp(total)}</div></div>
+      <div><div class="label">Per day</div><div class="num" style="font-weight:600;font-size:1.1rem">${gbp(perDay)}</div></div>`;
+  }
+
+  function renderFuels(A){
+    $("fuels").innerHTML = ["elec","gas"].map(f => {
+      const a = A[f]; const u = unitLabel(f);
+      const head = `<div class="fuel-top"><div class="fuel-name">${ICON[f]}<h3>${FUELS[f].name}</h3></div>${a.last ? `<span class="meter" title="Last reading">${esc(meterFmt(a.last.value))}</span>` : ""}</div>`;
+      if (!tariffsFor(f).length) return `<div class="fuel ${f}">${head}<p class="empty">Add a ${FUELS[f].name.toLowerCase()} tariff below so costs can be worked out.</p></div>`;
+      if (!a.lastGood) return `<div class="fuel ${f}">${head}<p class="empty">${a.rs.length ? "One reading saved. Add another to see usage." : "No readings yet. Add your first one below."}</p></div>`;
+      const lp = a.lastGood;
+      return `<div class="fuel ${f}">${head}
+        <div class="stats">
+          <div class="stat"><span class="label">Last period</span><b>${gbp(lp.cost.total)}</b><span class="sub">${lp.days} days · ${n0(lp.kwh)} kWh</span></div>
+          <div class="stat"><span class="label">Average per day</span><b>${gbp(a.perDay)}</b><span class="sub">${n1(a.kwhDay)} kWh a day</span></div>
+          <div class="stat"><span class="label">Monthly estimate</span><b>${gbp(a.perDay * 30.44)}</b><span class="sub">at your average rate</span></div>
+          <div class="stat"><span class="label">Since ${fmtDate(a.last.date)}</span><b>${a.sinceEst ? "≈ " + gbp(a.sinceEst.total) : "—"}</b><span class="sub">${a.sinceDays > 0 ? a.sinceDays + " day" + (a.sinceDays === 1 ? "" : "s") + ", estimated" : "Read today"}</span></div>
+        </div>
+        <div class="hint">Last reading ${fmtDate(a.last.date, true)} · meter in ${esc(u)}</div>
+      </div>`;
+    }).join("");
+  }
+
+  function renderChart(A){
+    const box = $("chart");
+    const series = ["elec","gas"].map(f => ({ f, pts: A[f].good.map(p => ({ a: toUTC(p.from), b: toUTC(p.to), v: p.cost.total / p.days })) })).filter(s => s.pts.length);
+    if (!series.length) { box.innerHTML = '<p class="hint" style="padding:24px 8px;margin:0;text-align:center">Your daily cost will chart here once a meter has two readings.</p>'; return; }
+    const W = Math.max(280, box.clientWidth || 600), H = 200, L = 44, R = 12, T = 10, B = 26;
+    let x0 = Infinity, x1 = -Infinity, vmax = 0;
+    series.forEach(s => s.pts.forEach(p => { x0 = Math.min(x0, p.a); x1 = Math.max(x1, p.b); vmax = Math.max(vmax, p.v); }));
+    if (x1 === x0) x1 = x0 + 864e5;
+    const stepsP = [10,20,25,50,100,200,250,500,1000];
+    const step = stepsP.find(s => vmax / s <= 4) || 1000;
+    const ymax = Math.max(step, Math.ceil(vmax / step) * step);
+    const X = t => L + (t - x0) / (x1 - x0) * (W - L - R);
+    const Y = v => T + (1 - v / ymax) * (H - T - B);
+    let g = "";
+    for (let v = 0; v <= ymax + 1e-9; v += step) {
+      g += `<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)" stroke-width="1"/>`;
+      g += `<text x="${L-6}" y="${Y(v)+4}" text-anchor="end">${gbp(v).replace(".00","")}</text>`;
+    }
+    // x labels: first of each month within range, thinned to fit
+    const months = []; const d = new Date(x0); let m = Date.UTC(d.getUTCFullYear(), d.getUTCMonth() + (d.getUTCDate() > 1 ? 1 : 0), 1);
+    while (m <= x1) { months.push(m); const dd = new Date(m); m = Date.UTC(dd.getUTCFullYear(), dd.getUTCMonth()+1, 1); }
+    let ticks = months.length ? months : [x0, x1];
+    const maxT = Math.max(2, Math.floor((W - L - R) / 60));
+    if (ticks.length > maxT) { const k = Math.ceil(ticks.length / maxT); ticks = ticks.filter((_, i) => i % k === 0); }
+    ticks.forEach(t => {
+      const lbl = new Date(t).toLocaleDateString("en-GB", months.length ? { month: "short", timeZone: "UTC" } : { day: "numeric", month: "short", timeZone: "UTC" });
+      g += `<text x="${X(t)}" y="${H-8}" text-anchor="middle">${lbl}</text>`;
+    });
+    series.forEach(s => {
+      const c = FUELS[s.f].color; let line = "", area = "";
+      s.pts.forEach((p, i) => {
+        line += `${i === 0 || p.a !== s.pts[i-1].b ? "M" : "L"}${X(p.a)},${Y(p.v)} L${X(p.b)},${Y(p.v)} `;
+        area += `M${X(p.a)},${Y(0)} L${X(p.a)},${Y(p.v)} L${X(p.b)},${Y(p.v)} L${X(p.b)},${Y(0)} Z `;
+      });
+      const last = s.pts[s.pts.length-1];
+      g += `<path d="${area}" fill="${c}" fill-opacity=".12" stroke="none"/><path d="${line}" fill="none" stroke="${c}" stroke-width="2.25" stroke-linejoin="round"/>`;
+      g += `<circle cx="${X(last.b)}" cy="${Y(last.v)}" r="3.5" fill="${c}" stroke="var(--surface)" stroke-width="1.5"/>`;
+    });
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="Average cost per day for each period between readings">${g}</svg>`;
+  }
+
+  function renderPeriods(A){
+    const fs = state.filter === "all" ? ["elec","gas"] : [state.filter];
+    const rows = fs.flatMap(f => A[f].periods).sort((a,b) => a.to < b.to ? 1 : a.to > b.to ? -1 : 0);
+    const readings = state.readings.filter(r => fs.includes(r.fuel)).sort((a,b) => a.date < b.date ? 1 : -1);
+    let html = "";
+    if (rows.length) {
+      html += `<table><thead><tr><th>Period</th><th>Days</th><th>Used</th><th>kWh</th><th>Energy</th><th>Standing</th><th>Total</th><th>Per day</th></tr></thead><tbody>`;
+      html += rows.map(p => {
+        const tag = `<span class="tag" style="background:${FUELS[p.fuel].color}"></span>`;
+        const per = `${tag}${fmtDate(p.from)} – ${fmtDate(p.to, true)}${p.example ? '<span class="ex">example</span>' : ""}`;
+        if (p.error) return `<tr class="bad"><td>${per}</td><td colspan="7" style="text-align:left">${esc(p.error)}</td></tr>`;
+        if (!p.cost) return `<tr><td>${per}</td><td>${p.days}</td><td>${meterFmt(p.units)} ${esc(unitLabel(p.fuel))}</td><td>${n0(p.kwh)}</td><td colspan="4" style="text-align:left" class="muted">Add a tariff to price this</td></tr>`;
+        return `<tr><td>${per}</td><td>${p.days}</td><td>${meterFmt(+p.units.toFixed(3))} ${esc(unitLabel(p.fuel))}</td><td>${n1(p.kwh)}</td><td>${gbp(p.cost.energy)}</td><td>${gbp(p.cost.standing)}</td><td class="total">${gbp(p.cost.total)}</td><td>${gbp(p.cost.total / p.days)}</td></tr>`;
+      }).join("");
+      html += `</tbody></table>`;
+    } else {
+      html += `<p class="hint" style="padding:16px;margin:0">Periods appear here once a meter has two readings.</p>`;
+    }
+    if (readings.length) {
+      html += `<details style="border:0;border-top:1px solid var(--line);border-radius:0"><summary style="font-size:.95rem">All readings (${readings.length})</summary><div class="list">` +
+        readings.map(r => `<div class="item"><div class="main"><b class="num">${esc(meterFmt(r.value))} <span class="muted" style="font-weight:400">${esc(unitLabel(r.fuel))}</span>${r.example ? '<span class="ex">example</span>' : ""}</b><span class="hint">${fmtDate(r.date, true)}</span></div>
+          <div style="display:flex;gap:8px;align-items:center"><span class="pill ${r.fuel}">${FUELS[r.fuel].name}</span><button class="small ghost danger" data-del-r="${esc(r.id)}">Delete</button></div></div>`).join("") + `</div></details>`;
+    }
+    $("periods").innerHTML = html;
+  }
+
+  /* ---------- usage history ---------- */
+  function buildHistory(A, by){
+    const buckets = {}, f = vatFactor();
+    const blank = () => ({ kwh: 0, cost: 0, days: 0 });
+    ["elec","gas"].forEach(fuel => {
+      const list = tariffsFor(fuel); if (!list.length) return;
+      A[fuel].good.forEach(p => {
+        const perDay = p.kwh / p.days;
+        for (let i = 0; i < p.days; i++) {
+          const day = addDays(p.from, i), key = by === "year" ? day.slice(0,4) : day.slice(0,7);
+          const t = tariffAt(list, day);
+          const b = buckets[key] || (buckets[key] = { key, elec: blank(), gas: blank() });
+          const u = b[fuel]; u.kwh += perDay; u.cost += (perDay * t.unit + t.standing) * f; u.days++;
+        }
+      });
+    });
+    const rows = Object.values(buckets).sort((a,b) => a.key < b.key ? -1 : 1);
+    rows.forEach(r => {
+      r.cost = r.elec.cost + r.gas.cost;
+      r.days = Math.max(r.elec.days, r.gas.days);
+      r.span = by === "year" ? (((+r.key % 4 === 0 && +r.key % 100) || +r.key % 400 === 0) ? 366 : 365)
+        : new Date(Date.UTC(+r.key.slice(0,4), +r.key.slice(5,7), 0)).getUTCDate();
+      r.perDay = (r.elec.days ? r.elec.cost / r.elec.days : 0) + (r.gas.days ? r.gas.cost / r.gas.days : 0);
+    });
+    return rows;
+  }
+  function histLabel(key, by, short){
+    if (by === "year") return key;
+    return new Date(Date.UTC(+key.slice(0,4), +key.slice(5,7) - 1, 1)).toLocaleDateString("en-GB", { month: short ? "short" : "long", year: short ? "2-digit" : "numeric", timeZone: "UTC" });
+  }
+  function renderHistory(A){
+    const by = state.hist || "month";
+    const rows = buildHistory(A, by);
+    const box = $("histChart");
+    if (!rows.length) {
+      box.innerHTML = '<p class="hint" style="padding:24px 8px;margin:0;text-align:center">Your history builds up here as you log readings.</p>';
+      $("history").innerHTML = `<p class="hint" style="padding:16px;margin:0">Add two readings for a meter to start your history.</p>`;
+      return;
+    }
+    // Chart: stacked bars, last 12 buckets
+    const show = rows.slice(-12);
+    const W = Math.max(280, box.clientWidth || 600), H = 190, L = 44, R = 8, T = 10, B = 26;
+    const vmax = Math.max(...show.map(r => r.cost));
+    const steps = [500,1000,2000,2500,5000,10000,20000,25000,50000,100000,200000,500000];
+    const step = steps.find(s => vmax / s <= 4) || 500000;
+    const ymax = Math.max(step, Math.ceil(vmax / step) * step);
+    const Y = v => T + (1 - v / ymax) * (H - T - B);
+    const slot = (W - L - R) / Math.max(show.length, 3), bw = Math.min(46, slot * .62);
+    let g = "";
+    for (let v = 0; v <= ymax + 1e-9; v += step) {
+      g += `<line x1="${L}" x2="${W-R}" y1="${Y(v)}" y2="${Y(v)}" stroke="var(--line)"/><text x="${L-6}" y="${Y(v)+4}" text-anchor="end">£${n0(v/100)}</text>`;
+    }
+    const every = Math.ceil(show.length / Math.max(1, Math.floor((W - L - R) / 44)));
+    show.forEach((r, i) => {
+      const cx = L + slot * i + slot / 2, x = cx - bw / 2;
+      const ye = Y(r.elec.cost), yg = Y(r.elec.cost + r.gas.cost);
+      if (r.elec.cost > 0) g += `<rect x="${x}" y="${ye}" width="${bw}" height="${Y(0) - ye}" fill="var(--elec)"/>`;
+      if (r.gas.cost > 0) g += `<rect x="${x}" y="${yg}" width="${bw}" height="${ye - yg}" fill="var(--gas)"/>`;
+      if (r.days < r.span) g += `<rect x="${x}" y="${yg}" width="${bw}" height="${Y(0) - yg}" fill="none" stroke="var(--muted)" stroke-dasharray="3 3"/>`;
+      if (i % every === 0 || i === show.length - 1) g += `<text x="${cx}" y="${H-8}" text-anchor="middle">${histLabel(r.key, by, true)}</text>`;
+    });
+    box.innerHTML = `<svg width="${W}" height="${H}" viewBox="0 0 ${W} ${H}" role="img" aria-label="${by === "year" ? "Yearly" : "Monthly"} energy cost, electricity and gas stacked">${g}</svg>` +
+      (show.some(r => r.days < r.span) ? `<p class="hint" style="margin:4px 6px 0">Dashed outline: ${by === "year" ? "year" : "month"} not fully covered by readings yet.</p>` : "");
+
+    // Table: newest first, change vs same period last year, else vs previous
+    const byKey = Object.fromEntries(rows.map(r => [r.key, r]));
+    const cell = u => u.days ? `${n0(u.kwh)} kWh<span class="sub">${gbp(u.cost)}</span>` : '<span class="muted">—</span>';
+    const body = rows.map((r, i) => {
+      let cmp = null, vs = "";
+      if (by === "month") {
+        const ly = (+r.key.slice(0,4) - 1) + r.key.slice(4);
+        if (byKey[ly]) { cmp = byKey[ly]; vs = "vs " + histLabel(ly, by, true); }
+        else if (rows[i-1]) { cmp = rows[i-1]; vs = "vs " + histLabel(rows[i-1].key, by, true); }
+      } else if (rows[i-1]) { cmp = rows[i-1]; vs = "vs " + rows[i-1].key; }
+      let change = '<span class="muted">—</span>';
+      if (cmp && cmp.perDay) {
+        const d = (r.perDay - cmp.perDay) / cmp.perDay * 100;
+        change = `<span class="delta ${Math.abs(d) < .5 ? "same" : d > 0 ? "up" : "down"}" style="display:inline">${Math.abs(d) < .5 ? "no change" : (d > 0 ? "▲ " : "▼ ") + Math.abs(d).toFixed(0) + "%"}</span><span class="sub">${vs}</span>`;
+      }
+      const partial = r.days < r.span ? `<span class="sub">${r.days} of ${r.span} days logged</span>` : `<span class="sub">Complete</span>`;
+      return `<tr><td><b>${histLabel(r.key, by)}</b>${partial}</td><td>${cell(r.elec)}</td><td>${cell(r.gas)}</td><td class="total">${gbp(r.cost)}<span class="sub">${gbp(r.perDay)} a day</span></td><td>${change}</td></tr>`;
+    }).reverse().join("");
+    const tot = rows.reduce((s, r) => s + r.cost, 0);
+    $("history").innerHTML = `<table><thead><tr><th>${by === "year" ? "Year" : "Month"}</th><th>Electricity</th><th>Gas</th><th>Total</th><th>Change</th></tr></thead><tbody>${body}</tbody>
+      <tfoot><tr><td><b>All time</b></td><td>${n0(rows.reduce((s,r)=>s+r.elec.kwh,0))} kWh</td><td>${n0(rows.reduce((s,r)=>s+r.gas.kwh,0))} kWh</td><td class="total">${gbp(tot)}</td><td></td></tr></tfoot></table>`;
+  }
+
+  function tariffUsage(fuel, a){
+    const list = tariffsFor(fuel), m = {}, f = vatFactor();
+    list.forEach(t => m[t.id] = { kwh: 0, cost: 0, days: 0 });
+    if (!list.length) return m;
+    a.good.forEach(p => {
+      const perDay = p.kwh / p.days;
+      for (let i = 0; i < p.days; i++) {
+        const t = tariffAt(list, addDays(p.from, i)); const u = m[t.id];
+        u.kwh += perDay; u.cost += (perDay * t.unit + t.standing) * f; u.days++;
+      }
+    });
+    return m;
+  }
+  function delta(cur, prev){
+    if (prev == null) return "";
+    const d = cur - prev; if (Math.abs(d) < 1e-9) return '<span class="delta same">no change</span>';
+    const pct = prev ? ` (${d > 0 ? "+" : "−"}${Math.abs(d / prev * 100).toFixed(1)}%)` : "";
+    return `<span class="delta ${d > 0 ? "up" : "down"}">${d > 0 ? "▲" : "▼"} ${n2(Math.abs(d))}p${pct}</span>`;
+  }
+  function renderTariffs(A){
+    const f = tFuel(), name = FUELS[f].name, lower = name.toLowerCase();
+    const card = $("tcard"); card.classList.remove("elec","gas"); card.classList.add(f);
+    $("tHead").textContent = `${name} tariff history`;
+    $("tFormHead").textContent = `Add ${f === "elec" ? "an" : "a"} ${lower} tariff`;
+    $("tunitLabel").textContent = `${name} unit rate (p per kWh)`;
+    $("tstandLabel").textContent = `${name} standing charge (p per day)`;
+    $("tsave").textContent = `Add ${lower} tariff`;
+    const list = tariffsFor(f), today = todayStr(), current = list.length ? tariffAt(list, today) : null;
+    $("tunit").placeholder = current ? n2(current.unit) : (f === "elec" ? "26.32" : "7.97");
+    $("tstand").placeholder = current ? n2(current.standing) : (f === "elec" ? "54.83" : "29.68");
+    $("tCount").textContent = list.length ? `${list.length} tariff${list.length === 1 ? "" : "s"}` : "";
+    if (!list.length) { $("tariffs").innerHTML = `<p class="hint" style="margin:0">No ${lower} tariffs yet. Add your current rates below — they're on your bill or your supplier's app.</p>`; return; }
+    const use = tariffUsage(f, A[f]);
+    const rows = list.map((t, i) => {
+      const next = list[i+1], prev = list[i-1];
+      const end = next ? fmtDate(addDays(next.from, -1), true) : "now";
+      const u = use[t.id];
+      return `<tr class="${t === current ? "current" : ""}">
+        <td><b>${esc(t.name || name + " tariff")}</b>${t === current ? ' <span class="pill now">Current</span>' : ""}<span class="sub">${fmtDate(t.from, true)} – ${end}</span></td>
+        <td>${n2(t.unit)}p${delta(t.unit, prev && prev.unit)}</td>
+        <td>${n2(t.standing)}p${delta(t.standing, prev && prev.standing)}</td>
+        <td>${u.days ? n0(u.kwh) + " kWh<span class=\"sub\">" + u.days + " days logged</span>" : '<span class="muted">—</span>'}</td>
+        <td class="total">${u.days ? gbp(u.cost) + "<span class=\"sub\">" + gbp(u.cost / u.days) + " a day</span>" : '<span class="muted">—</span>'}</td>
+        <td><button class="small ghost danger" data-del-t="${esc(t.id)}">Delete</button></td></tr>`;
+    }).reverse().join("");
+    $("tariffs").innerHTML = `<table><thead><tr><th>Tariff &amp; dates</th><th>Unit rate</th><th>Standing</th><th>Used</th><th>Spent</th><th><span class="sr" style="position:absolute;left:-9999px">Actions</span></th></tr></thead><tbody>${rows}</tbody></table>`;
+  }
+  const n2 = v => Number(v).toLocaleString("en-GB", { maximumFractionDigits: 3 });
+
+  const rFuel = () => document.querySelector('input[name="rfuel"]:checked').value;
+  const tFuel = () => document.querySelector('input[name="tfuel"]:checked').value;
+
+  function renderReadingHint(){
+    const f = rFuel(); const u = unitLabel(f);
+    $("rvalLabel").textContent = `Reading (${u})`;
+    const rs = state.readings.filter(r => r.fuel === f).sort((a,b) => a.date < b.date ? -1 : 1);
+    const last = rs[rs.length-1]; const h = $("rhint");
+    h.classList.remove("warn");
+    const v = parseFloat($("rval").value); const d = $("rdate").value;
+    if (last && !isNaN(v) && d >= last.date && v < last.value) { h.textContent = `That's lower than your last reading of ${meterFmt(last.value)}. Check the digits.`; h.classList.add("warn"); return; }
+    if (last && !isNaN(v) && d > last.date && v >= last.value) {
+      const days = dayDiff(last.date, d); const kwh = toKwh(f, v - last.value); const c = costFor(f, last.date, days, kwh);
+      h.textContent = `${n1(kwh)} kWh over ${days} day${days === 1 ? "" : "s"}${c ? " ≈ " + gbp(c.total) : ""}`; return;
+    }
+    h.textContent = last ? `Last reading: ${meterFmt(last.value)} on ${fmtDate(last.date, true)}` : "First reading for this meter.";
+  }
+
+  let settingsDirty = false;
+  function renderSettingsForm(){
+    const s = state.settings;
+    if (!settingsDirty) { $("sgu").value = s.gasUnit; $("scv").value = s.cv; $("svinc").checked = !!s.vatIncluded; $("svat").value = s.vat; }
+    $("svat").disabled = $("svinc").checked;
+    const gu = $("sgu").value, cv = $("scv").value || 39.5;
+    $("formula").textContent = gu === "kwh" ? "Gas readings are already in kWh — no conversion." :
+      gu === "ft3" ? `kWh = units × 2.83 × 1.02264 × ${cv} ÷ 3.6` : `kWh = m³ × 1.02264 × ${cv} ÷ 3.6`;
+  }
+
+  /* ---------- toast ---------- */
+  let tt;
+  function toast(msg, err){ const t = $("toast"); t.textContent = msg; t.className = err ? "err" : ""; t.hidden = false; clearTimeout(tt); tt = setTimeout(() => t.hidden = true, 2600); }
+  function failMsg(e){
+    if (e && e.code === "quota_exceeded") return "Storage is full. Delete some old readings and try again.";
+    if (e && e.code === "invalid_argument") return "You don't have permission to change this log.";
+    return "Couldn't save. Check your connection and try again.";
+  }
+
+  /* ---------- storage ---------- */
+  // Starting tariffs, used only the first time the app opens on a device. Restore a backup to bring in readings.
+  const SEED = {
+    readings: [],
+    tariffs: [
+      { id: "zouezqwlialsb7l2ibcr", fuel: "elec", name: "Flexible Octopus", from: "2026-10-01", unit: 26.47, standing: 46.3 },
+      { id: "unj58wc8d7pf2w9f9jzd", fuel: "gas", name: "Flexible Octopus", from: "2026-10-01", unit: 8.17, standing: 28.2 }
+    ]
+  };
+  let storageOK = true;
+  function saveLocal(){
+    try { localStorage.setItem(LKEY, JSON.stringify({ readings: state.readings, tariffs: state.tariffs, settings: state.settings, lastBackup: state.lastBackup || null })); storageOK = true; }
+    catch { storageOK = false; toast("This browser won't save data. Open the app in Safari or Chrome, not a private window.", true); }
+  }
+  function loadLocal(){
+    state.mode = "local";
+    let found = false;
+    try { const j = JSON.parse(localStorage.getItem(LKEY) || "null"); if (j) { found = true; state.readings = j.readings || []; state.tariffs = j.tariffs || []; state.settings = { ...DEFAULT_SETTINGS, ...(j.settings || {}) }; state.lastBackup = j.lastBackup || null; } } catch {}
+    if (!found) { state.readings = SEED.readings.map(r => ({ ...r })); state.tariffs = SEED.tariffs.map(t => ({ ...t })); saveLocal(); }
+    $("storage").textContent = "Saved on this device. Works offline.";
+    render();
+  }
+  function renderBackupAge(){
+    const el = $("backupAge"); if (!el) return;
+    if (!state.lastBackup) { el.textContent = "You haven't saved a backup yet."; el.classList.add("stale"); return; }
+    const days = dayDiff(state.lastBackup.slice(0,10), todayStr());
+    el.textContent = `Last backup: ${fmtDate(state.lastBackup.slice(0,10), true)}${days > 0 ? ` (${days} day${days === 1 ? "" : "s"} ago)` : " (today)"}`;
+    el.classList.toggle("stale", days > 30);
+  }
+  function backupJSON(){
+    return JSON.stringify({ app: "home-energy-log", version: 1, exported: new Date().toISOString(), readings: state.readings, tariffs: state.tariffs, settings: state.settings }, null, 1);
+  }
+  function markBackedUp(){ state.lastBackup = new Date().toISOString(); saveLocal(); renderBackupAge(); }
+  async function exportBackup(){
+    const name = `energy-log-backup-${todayStr()}.json`;
+    const text = backupJSON();
+    const file = new File([text], name, { type: "application/json" });
+    try {
+      if (navigator.canShare && navigator.canShare({ files: [file] })) { await navigator.share({ files: [file], title: "Energy log backup" }); markBackedUp(); toast("Backup saved"); return; }
+    } catch (e) { if (e && e.name === "AbortError") return; }
+    const url = URL.createObjectURL(file);
+    const a = document.createElement("a"); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 4000);
+    markBackedUp(); toast("Backup file downloaded");
+  }
+  function restoreFrom(text){
+    let j; try { j = JSON.parse(text); } catch { return toast("That isn't a backup file. Choose the .json file you saved from this app.", true); }
+    if (!j || !Array.isArray(j.readings) || !Array.isArray(j.tariffs)) return toast("That file doesn't contain energy log data.", true);
+    const okR = j.readings.filter(r => r && (r.fuel === "elec" || r.fuel === "gas") && /^\d{4}-\d{2}-\d{2}$/.test(r.date) && typeof r.value === "number");
+    const okT = j.tariffs.filter(t => t && (t.fuel === "elec" || t.fuel === "gas") && /^\d{4}-\d{2}-\d{2}$/.test(t.from) && typeof t.unit === "number" && typeof t.standing === "number");
+    state.readings = okR.map(r => ({ id: r.id || uid(), fuel: r.fuel, date: r.date, value: r.value }));
+    state.tariffs = okT.map(t => ({ id: t.id || uid(), fuel: t.fuel, name: String(t.name || "").slice(0, 60), from: t.from, unit: t.unit, standing: t.standing }));
+    state.settings = { ...DEFAULT_SETTINGS, ...(j.settings || {}) };
+    settingsDirty = false; saveLocal(); render();
+    toast(`Restored ${state.readings.length} readings and ${state.tariffs.length} tariffs`);
+  }
+  const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
+
+  const store = {
+    async addReading(r){ if (db) await db.collection("readings").add(r); else { state.readings.push({ id: uid(), ...r }); saveLocal(); render(); } },
+    async delReading(id){ if (db) await db.doc("readings/" + id).delete(); else { state.readings = state.readings.filter(r => r.id !== id); saveLocal(); render(); } },
+    async addTariff(t){ if (db) await db.collection("tariffs").add(t); else { state.tariffs.push({ id: uid(), ...t }); saveLocal(); render(); } },
+    async delTariff(id){ if (db) await db.doc("tariffs/" + id).delete(); else { state.tariffs = state.tariffs.filter(t => t.id !== id); saveLocal(); render(); } },
+    async saveSettings(s){ if (db) await db.doc("settings/main").set(s); else { state.settings = s; saveLocal(); render(); } },
+    async clearExamples(){
+      const ex = state.readings.filter(r => r.example);
+      if (db) { for (const r of ex) await db.doc("readings/" + r.id).delete(); }
+      else { state.readings = state.readings.filter(r => !r.example); saveLocal(); render(); }
+    }
+  };
+
+  async function init(){
+    $("rdate").value = todayStr(); $("tfrom").value = todayStr();
+    renderChartPlaceholder();
+    if (/^https?:$/.test(location.protocol) && "serviceWorker" in navigator) navigator.serviceWorker.register("sw.js").catch(() => {});
+    try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch {}
+    if (!window.claude || !window.claude.use) { loadLocal(); return; }
+    try { db = await window.claude.use("db"); } catch { db = null; }
+    if (!db) { loadLocal(); return; }
+    state.mode = "db";
+    $("storage").textContent = "Saved to your account. Open this page on any device.";
+    const done = k => { state.loaded[k] = true; if (state.loaded.r && state.loaded.t && state.loaded.s) render(); };
+    const err = e => { if (e && e.code !== "revoked") toast("Lost connection to your saved data. Reload to try again.", true); };
+    db.collection("readings").onSnapshot(s => { state.readings = s.docs.map(d => ({ id: d.id, ...d.data() })); done("r"); if (state.loaded.t && state.loaded.s) render(); }, err);
+    db.collection("tariffs").onSnapshot(s => { state.tariffs = s.docs.map(d => ({ id: d.id, ...d.data() })); done("t"); if (state.loaded.r && state.loaded.s) render(); }, err);
+    db.doc("settings/main").onSnapshot(s => { state.settings = { ...DEFAULT_SETTINGS, ...(s.exists ? s.data() : {}) }; done("s"); if (state.loaded.r && state.loaded.t) render(); }, err);
+  }
+  function renderChartPlaceholder(){ $("chart").innerHTML = '<p class="hint" style="padding:24px 8px;margin:0;text-align:center">Loading…</p>'; }
+
+  /* ---------- events ---------- */
+  document.querySelectorAll('input[name="rfuel"]').forEach(i => i.addEventListener("change", renderReadingHint));
+  document.querySelectorAll('input[name="tfuel"]').forEach(i => i.addEventListener("change", () => { if (state.mode) render(); }));
+  $("rval").addEventListener("input", renderReadingHint);
+  $("rdate").addEventListener("change", renderReadingHint);
+
+  $("readingForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const fuel = rFuel(), date = $("rdate").value, value = parseFloat($("rval").value);
+    if (!date) return toast("Pick the date you read the meter.", true);
+    if (isNaN(value) || value < 0) return toast("Enter the number shown on the meter.", true);
+    if (state.readings.some(r => r.fuel === fuel && r.date === date)) return toast("There's already a " + FUELS[fuel].name.toLowerCase() + " reading for that date. Delete it first to replace it.", true);
+    const btn = $("rsave"); btn.disabled = true;
+    try { await store.addReading({ fuel, date, value }); $("rval").value = ""; renderReadingHint(); toast("Reading saved"); }
+    catch (err) { toast(failMsg(err), true); }
+    btn.disabled = false;
+  });
+
+  $("tariffForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const fuel = tFuel(), from = $("tfrom").value, unit = parseFloat($("tunit").value), standing = parseFloat($("tstand").value), name = $("tname").value.trim();
+    if (!from) return toast("Pick the date the tariff starts.", true);
+    if (isNaN(unit) || unit < 0) return toast("Enter the unit rate in pence per kWh.", true);
+    if (isNaN(standing) || standing < 0) return toast("Enter the standing charge in pence per day.", true);
+    if (unit > 200 || standing > 500) return toast("Those look like pounds. Enter pence, e.g. 26.32 not 0.2632.", true);
+    const btn = $("tsave"); btn.disabled = true;
+    try { await store.addTariff({ fuel, from, unit, standing, name }); $("tunit").value = ""; $("tstand").value = ""; $("tname").value = ""; toast("Tariff added"); }
+    catch (err) { toast(failMsg(err), true); }
+    btn.disabled = false;
+  });
+
+  ["sgu","scv","svat"].forEach(id => $(id).addEventListener("input", () => { settingsDirty = true; renderSettingsForm(); }));
+  $("svinc").addEventListener("change", () => { settingsDirty = true; renderSettingsForm(); });
+  $("settingsForm").addEventListener("submit", async e => {
+    e.preventDefault();
+    const s = { gasUnit: $("sgu").value, cv: parseFloat($("scv").value) || 39.5, vatIncluded: $("svinc").checked, vat: parseFloat($("svat").value) || 0 };
+    try { await store.saveSettings(s); settingsDirty = false; toast("Settings saved"); render(); }
+    catch (err) { toast(failMsg(err), true); }
+  });
+
+  // Two-tap delete
+  document.addEventListener("click", async e => {
+    const b = e.target.closest("[data-del-r],[data-del-t]");
+    if (!b) return;
+    if (!b.classList.contains("confirm")) {
+      b.classList.add("confirm"); b.textContent = "Tap to confirm";
+      setTimeout(() => { if (b.isConnected) { b.classList.remove("confirm"); b.textContent = "Delete"; } }, 3000);
+      return;
+    }
+    b.disabled = true;
+    try { if (b.dataset.delR) await store.delReading(b.dataset.delR); else await store.delTariff(b.dataset.delT); toast("Deleted"); }
+    catch (err) { toast(failMsg(err), true); b.disabled = false; }
+  });
+
+  $("clearEx").addEventListener("click", async e => {
+    const b = e.currentTarget;
+    if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Tap again to clear"; setTimeout(() => { b.classList.remove("confirm"); b.textContent = "Clear examples"; }, 3000); return; }
+    b.disabled = true;
+    try { await store.clearExamples(); toast("Examples cleared"); } catch (err) { toast(failMsg(err), true); }
+    b.disabled = false; b.classList.remove("confirm"); b.textContent = "Clear examples";
+  });
+
+  document.querySelectorAll(".chip[data-f]").forEach(c => c.addEventListener("click", () => {
+    state.filter = c.dataset.f;
+    document.querySelectorAll(".chip[data-f]").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+    render();
+  }));
+  document.querySelectorAll(".hchip").forEach(c => c.addEventListener("click", () => {
+    state.hist = c.dataset.h;
+    document.querySelectorAll(".hchip").forEach(x => x.setAttribute("aria-pressed", String(x === c)));
+    render();
+  }));
+
+  $("exportBtn").addEventListener("click", exportBackup);
+  $("copyBtn").addEventListener("click", async () => {
+    const text = backupJSON();
+    try { await navigator.clipboard.writeText(text); markBackedUp(); toast("Backup copied. Paste it into a note or email to yourself."); }
+    catch { const t = $("importText"); t.value = text; t.focus(); t.select(); toast("Text selected below. Copy it from there.", true); }
+  });
+  $("importFile").addEventListener("change", e => {
+    const f = e.target.files && e.target.files[0]; if (!f) return;
+    const rd = new FileReader(); rd.onload = () => { $("importText").value = String(rd.result); toast("File loaded. Tap Restore to replace your data."); }; rd.readAsText(f);
+  });
+  $("importBtn").addEventListener("click", e => {
+    const b = e.currentTarget, text = $("importText").value.trim();
+    if (!text) return toast("Choose a backup file or paste backup text first.", true);
+    if (!b.classList.contains("confirm")) { b.classList.add("confirm"); b.textContent = "Tap again to replace all data"; setTimeout(() => { b.classList.remove("confirm"); b.textContent = "Restore"; }, 4000); return; }
+    b.classList.remove("confirm"); b.textContent = "Restore";
+    restoreFrom(text); $("importText").value = ""; $("importFile").value = "";
+  });
+
+  let rt; window.addEventListener("resize", () => { clearTimeout(rt); rt = setTimeout(() => { if (state.mode) render(); }, 150); });
+
+  init();
+})();
+</script>
+
+</body>
+</html>
