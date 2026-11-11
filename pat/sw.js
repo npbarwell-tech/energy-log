@@ -1,7 +1,8 @@
 // Offline support: the whole app (including PDF and barcode libraries) is cached on install.
-const CACHE = "pat-log-v1";
+const CACHE = "pat-log-v2";
 const FILES = ["./", "index.html", "app.css", "app.js", "standards.js", "manifest.webmanifest", "icon-192.png", "icon-512.png", "apple-touch-icon.png",
-  "vendor/jspdf.umd.min.js", "vendor/jspdf.plugin.autotable.min.js", "vendor/zxing.min.js"];
+  "vendor/jspdf.umd.min.js", "vendor/jspdf.plugin.autotable.min.js", "vendor/zxing.min.js",
+  "vendor/pdf.min.js", "vendor/pdf.worker.min.js"];
 self.addEventListener("install", e => { e.waitUntil(caches.open(CACHE).then(c => c.addAll(FILES)).then(() => self.skipWaiting())); });
 self.addEventListener("activate", e => { e.waitUntil(caches.keys().then(ks => Promise.all(ks.filter(k => k.startsWith("pat-log-") && k !== CACHE).map(k => caches.delete(k)))).then(() => self.clients.claim())); });
 self.addEventListener("fetch", e => {

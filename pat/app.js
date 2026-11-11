@@ -651,9 +651,61 @@ async function saveFile(blob, name) {
   if (touch && navigator.canShare && navigator.canShare({ files: [file] })) {
     try { await navigator.share({ files: [file], title: name }); return; } catch (e) { if (e.name === "AbortError") return; }
   }
+  downloadFile(blob, name);
+}
+function downloadFile(blob, name) {
   const a = document.createElement("a");
   a.href = URL.createObjectURL(blob); a.download = name; document.body.appendChild(a); a.click();
   setTimeout(() => { URL.revokeObjectURL(a.href); a.remove(); }, 1500);
+}
+
+/* ---------------- PDF preview ---------------- */
+// PDF.js renders the pages ourselves: Android Chrome can't show a PDF inside a page, and iOS only shows page 1.
+let pdfjsReady;
+function loadPdfJs() {
+  if (!pdfjsReady) pdfjsReady = new Promise((res, rej) => {
+    const s = document.createElement("script"); s.src = "vendor/pdf.min.js";
+    s.onload = () => { window.pdfjsLib.GlobalWorkerOptions.workerSrc = "vendor/pdf.worker.min.js"; res(window.pdfjsLib); };
+    s.onerror = () => { pdfjsReady = null; rej(new Error("PDF viewer failed to load")); };
+    document.head.appendChild(s);
+  });
+  return pdfjsReady;
+}
+
+async function previewPdf(blob, name) {
+  const dlg = $("#pdfDlg"), pages = $("#pdfPages");
+  const file = new File([blob], name, { type: "application/pdf" });
+  let canShare = false; try { canShare = !!(navigator.canShare && navigator.canShare({ files: [file] })); } catch (e) {}
+  $("#pdfName").textContent = name;
+  $("#pdfShare").hidden = !canShare;
+  $("#pdfShare").onclick = async () => {
+    try { await navigator.share({ files: [file], title: name }); } catch (e) { if (e.name !== "AbortError") { toast("Couldn’t open sharing — downloading instead"); downloadFile(blob, name); } }
+  };
+  $("#pdfDownload").onclick = () => downloadFile(blob, name);
+  pages.innerHTML = `<p class="pdf-msg">Loading preview…</p>`;
+  pages.scrollTop = 0;
+  if (!dlg.open) dlg.showModal();
+  try {
+    const lib = await loadPdfJs();
+    const pdf = await lib.getDocument({ data: new Uint8Array(await blob.arrayBuffer()) }).promise;
+    $("#pdfName").textContent = `${name} · ${pdf.numPages} page${pdf.numPages > 1 ? "s" : ""}`;
+    pages.innerHTML = "";
+    const width = pages.clientWidth - 24, dpr = Math.min(window.devicePixelRatio || 1, 2);
+    for (let i = 1; i <= pdf.numPages; i++) {
+      if (!dlg.open) break;
+      const page = await pdf.getPage(i);
+      const vp = page.getViewport({ scale: (width * dpr) / page.getViewport({ scale: 1 }).width });
+      const c = document.createElement("canvas");
+      c.width = Math.floor(vp.width); c.height = Math.floor(vp.height);
+      c.setAttribute("aria-label", `Page ${i}`);
+      pages.appendChild(c);
+      await page.render({ canvasContext: c.getContext("2d"), viewport: vp }).promise;
+    }
+    pdf.destroy();
+  } catch (e) {
+    // Fall back to the browser's own viewer where it has one.
+    pages.innerHTML = `<iframe class="pdf-frame" title="PDF preview" src="${URL.createObjectURL(blob)}"></iframe><p class="pdf-msg">If the preview is blank, use Download to open it.</p>`;
+  }
 }
 
 /* ---------------- PDF ---------------- */
@@ -771,7 +823,7 @@ async function pdfAssets(list, opts = {}) {
   }
   pdfFooters(doc, "In-service inspection and testing of electrical equipment");
   const name = list.length === 1 ? `PAT_${list[0].assetNo}.pdf` : `PAT_reports_${todayISO()}.pdf`;
-  saveFile(doc.output("blob"), name);
+  previewPdf(doc.output("blob"), name);
 }
 
 function pdfTable(list) {
@@ -796,7 +848,7 @@ function pdfTable(list) {
     didParseCell: resultCellStyle, margin: { left: 8, right: 8, top: 14 }
   });
   pdfFooters(doc, "Limits per " + [...new Set(list.map(t => S.STANDARDS[t.standard]?.name))].join(", "));
-  saveFile(doc.output("blob"), `PAT_schedule_${todayISO()}.pdf`);
+  previewPdf(doc.output("blob"), `PAT_schedule_${todayISO()}.pdf`);
 }
 
 /* ---------------- Calculator ---------------- */
@@ -911,6 +963,7 @@ function bind() {
     openPhoto(p, () => { draft.photos = draft.photos.filter(x => x !== p); renderPhotos(); });
   };
   $("#photoClose").onclick = () => $("#photoDlg").close();
+  $("#pdfClose").onclick = () => $("#pdfDlg").close();
 
   ["#assetSearch", "#assetSite", "#assetDue"].forEach(s => $(s).addEventListener("input", renderAssets));
   ["#r-from", "#r-to", "#r-site", "#r-location", "#r-result", "#r-tester", "#r-q", "#r-latest"].forEach(s => $(s).addEventListener("input", renderRecords));
