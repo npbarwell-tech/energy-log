@@ -288,6 +288,15 @@
   <div class="actions center"><button class="btn danger" id="photoDel">Remove</button><button class="btn" id="photoClose">Close</button></div>
 </dialog>
 
+<dialog id="pdfDlg" class="pdf-dlg" aria-labelledby="pdfName">
+  <div class="pdf-head"><b id="pdfName">Preview</b><button class="btn small ghost" id="pdfClose" aria-label="Close preview">Close</button></div>
+  <div class="pdf-pages" id="pdfPages"></div>
+  <div class="pdf-foot">
+    <button class="btn" id="pdfDownload"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>Download</button>
+    <button class="btn primary" id="pdfShare"><svg viewBox="0 0 24 24"><path d="M12 15V3m-4 4 4-4 4 4M5 12v8h14v-8"/></svg>Send / share</button>
+  </div>
+</dialog>
+
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
 <script src="standards.js"></script>

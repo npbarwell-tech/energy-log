@@ -12,7 +12,7 @@ An offline-first web app (PWA) for in-service inspection and testing of electric
 - **History and comparison:** entering or scanning a known asset number loads its details and shows the last test. Each reading shows the % change from the previous one and flags significant deterioration. Asset pages show trend charts and the full history.
 - **Photos:** taken with the camera, compressed, and stored with the test.
 - **CSV export** of filtered records, filterable by date range, site, location, result, tester, free-text search, and latest-test-per-asset only.
-- **PDF reports:** one page per asset (results vs limits vs previous, visual checklist, photos, history, signature lines) or a landscape multi-asset schedule table.
+- **PDF reports** open in a preview first, where you can scroll every page before tapping **Send / share** or **Download**. They come as one page per asset (results vs limits vs previous, visual checklist, photos, history, signature lines) or a landscape multi-asset schedule table.
 - **Limit calculator:** earth bond limit from conductor size and length under both standards, with the working shown, plus a quick-reference table by class.
 - **Backup/restore** to a JSON file, including photos.
 
@@ -38,4 +38,4 @@ Everything is stored in the browser's IndexedDB on the device. There is no serve
 
 Serve the folder over HTTP, for example `python3 -m http.server` inside `pat/`, then open `http://localhost:8000`. The camera needs `https` or `localhost`. GitHub Pages works for hosting.
 
-Vendored libraries are in `vendor/`, each with its licence file: jsPDF 2.5.2, jspdf-autotable 3.8.4 and @zxing/library 0.21.3 (MIT/Apache-2.0).
+Vendored libraries are in `vendor/`, each with its licence file: jsPDF 2.5.2, jspdf-autotable 3.8.4, PDF.js 3.11.174 (for the preview) and @zxing/library 0.21.3 (MIT/Apache-2.0).
