@@ -1,0 +1,299 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<title>PAT Test Log</title>
+<meta name="theme-color" content="#f3f4f1" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#101412" media="(prefers-color-scheme: dark)">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="PAT Log">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" href="icon-192.png">
+<link rel="stylesheet" href="app.css">
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg><span>PAT Test Log</span></div>
+    <span class="top-std" id="topStd"></span>
+  </header>
+
+  <main>
+  <!-- ================= NEW TEST ================= -->
+  <section class="view" id="view-test" data-title="New test">
+    <form id="testForm" autocomplete="off" novalidate>
+      <div class="card">
+        <div class="sec-head"><h2>Asset</h2><span class="chip" id="assetState">New asset</span></div>
+        <div class="field">
+          <label for="f-assetNo">Asset number</label>
+          <div class="input-btn">
+            <input id="f-assetNo" name="assetNo" required inputmode="text" autocapitalize="characters" placeholder="Scan or type">
+            <button type="button" class="btn icon" id="scanBtn" aria-label="Scan barcode"><svg viewBox="0 0 24 24"><path d="M3 7V4h3M21 7V4h-3M3 17v3h3M21 17v3h-3M7 8v8M10 8v8M13 8v8M17 8v8"/></svg><span>Scan</span></button>
+          </div>
+        </div>
+        <div class="prev" id="prevPanel" hidden></div>
+        <div class="row">
+          <div class="field wide"><label for="f-description">Description</label><input id="f-description" name="description" placeholder="e.g. Kettle"></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="f-site">Site</label><input id="f-site" name="site" list="dl-site"></div>
+          <div class="field"><label for="f-location">Location</label><input id="f-location" name="location" list="dl-location" placeholder="e.g. Kitchen, 1st floor"></div>
+        </div>
+        <details class="more">
+          <summary>Make, model, serial, notes</summary>
+          <div class="row">
+            <div class="field"><label for="f-make">Make</label><input id="f-make" name="make"></div>
+            <div class="field"><label for="f-model">Model</label><input id="f-model" name="model"></div>
+            <div class="field"><label for="f-serial">Serial no.</label><input id="f-serial" name="serial"></div>
+          </div>
+          <div class="field"><label for="f-assetNotes">Asset notes</label><input id="f-assetNotes" name="assetNotes"></div>
+        </details>
+        <div class="row">
+          <div class="field"><label for="f-cls">Class</label>
+            <select id="f-cls" name="cls"><option value="I">Class I (earthed)</option><option value="II">Class II (double insulated)</option><option value="III">Class III (SELV)</option></select></div>
+          <div class="field"><label for="f-type">Equipment type</label>
+            <select id="f-type" name="type">
+              <option>Portable</option><option>Hand-held</option><option>Movable</option><option>Stationary</option><option>Fixed</option><option>IT equipment</option><option>Extension lead</option><option>IEC lead</option><option>Other</option>
+            </select></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="f-csa">Cord size (mm²)</label>
+            <select id="f-csa" name="csa"><option value="">—</option><option>0.5</option><option>0.75</option><option selected>1.0</option><option>1.25</option><option>1.5</option><option>2.5</option><option>4.0</option><option>6.0</option></select></div>
+          <div class="field"><label for="f-length">Cord length (m)</label><input id="f-length" name="length" inputmode="decimal" placeholder="e.g. 2"></div>
+          <div class="field"><label for="f-fuse">Fuse (A)</label>
+            <select id="f-fuse" name="fuse"><option value="">—</option><option>3</option><option>5</option><option>10</option><option>13</option><option>N/A</option></select></div>
+          <div class="field"><label for="f-powerKw">Power (kW)</label><input id="f-powerKw" name="powerKw" inputmode="decimal" placeholder="optional"></div>
+        </div>
+        <label class="check"><input type="checkbox" name="heating" id="f-heating"> Contains heating element</label>
+      </div>
+
+      <div class="card">
+        <div class="sec-head"><h2>Visual inspection</h2><span class="chip" id="visualState">Not started</span></div>
+        <div class="bulk"><button type="button" class="btn small" id="visAllPass">Mark all pass</button></div>
+        <ol class="checklist" id="checklist"></ol>
+      </div>
+
+      <div class="card">
+        <div class="sec-head"><h2>Tests</h2>
+          <select id="f-standard" name="standard" class="inline-select" aria-label="Standard"><option value="iet">IET Code of Practice</option><option value="en50699">BS EN 50699</option></select></div>
+
+        <div class="test" id="t-earth">
+          <div class="test-head"><h3>Earth continuity</h3><span class="res" data-res="earth"></span></div>
+          <div class="row">
+            <div class="field"><label for="f-earth">Reading (Ω)</label><input id="f-earth" name="earth" class="reading" inputmode="decimal" placeholder="0.00"></div>
+            <div class="field"><label for="f-earthLimit">Limit (Ω max)</label><input id="f-earthLimit" name="earthLimit" inputmode="decimal"></div>
+          </div>
+          <p class="hint" id="earthWorking"></p>
+          <p class="cmp" data-cmp="earth"></p>
+        </div>
+
+        <div class="test" id="t-ir">
+          <div class="test-head"><h3>Insulation resistance</h3><span class="res" data-res="ir"></span></div>
+          <div class="row">
+            <div class="field"><label for="f-ir">Reading (MΩ)</label>
+              <div class="input-btn"><button type="button" class="btn icon gt" data-gt="f-ir" aria-label="Over range" title="Over range (>)">&gt;</button><input id="f-ir" name="ir" class="reading" inputmode="decimal" placeholder="0.00"></div></div>
+            <div class="field"><label for="f-irLimit">Limit (MΩ min)</label><input id="f-irLimit" name="irLimit" inputmode="decimal"></div>
+            <div class="field"><label for="f-irV">Test voltage</label><select id="f-irV" name="irV"><option>500</option><option>250</option></select></div>
+          </div>
+          <p class="cmp" data-cmp="ir"></p>
+        </div>
+
+        <div class="test" id="t-leak">
+          <div class="test-head"><h3 id="leakTitle">Leakage current</h3><span class="res" data-res="leak"></span></div>
+          <div class="row">
+            <div class="field"><label for="f-leak">Reading (mA)</label><input id="f-leak" name="leak" class="reading" inputmode="decimal" placeholder="optional"></div>
+            <div class="field"><label for="f-leakLimit">Limit (mA max)</label><input id="f-leakLimit" name="leakLimit" inputmode="decimal"></div>
+            <div class="field"><label for="f-leakMethod">Method</label><select id="f-leakMethod" name="leakMethod"><option>Substitute</option><option>Differential</option><option>Direct</option><option>Touch current</option></select></div>
+          </div>
+          <p class="cmp" data-cmp="leak"></p>
+        </div>
+
+        <div class="row tri-row">
+          <div class="field"><label>Polarity</label><div class="seg" data-tri="polarity"></div></div>
+          <div class="field"><label>Functional check</label><div class="seg" data-tri="functional"></div></div>
+        </div>
+
+        <details class="more" id="rcdBox">
+          <summary>RCD trip time (if fitted)</summary>
+          <div class="row">
+            <div class="field"><label for="f-rcd1">× 1 IΔn (ms)</label><input id="f-rcd1" name="rcd1" inputmode="decimal"></div>
+            <div class="field"><label for="f-rcd5">× 5 IΔn (ms)</label><input id="f-rcd5" name="rcd5" inputmode="decimal"></div>
+          </div>
+          <p class="hint" id="rcdHint"></p>
+        </details>
+      </div>
+
+      <div class="card">
+        <div class="sec-head"><h2>Photos</h2><span class="muted small" id="photoCount"></span></div>
+        <div class="photos" id="photoStrip"></div>
+        <label class="btn" for="photoInput"><svg viewBox="0 0 24 24"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg>Add photo</label>
+        <input type="file" id="photoInput" accept="image/*" capture="environment" multiple hidden>
+      </div>
+
+      <div class="card">
+        <h2>Sign-off</h2>
+        <div class="row">
+          <div class="field"><label for="f-date">Test date</label><input type="date" id="f-date" name="date" required></div>
+          <div class="field"><label for="f-interval">Retest in</label>
+            <select id="f-interval" name="interval"><option value="3">3 months</option><option value="6">6 months</option><option value="12" selected>12 months</option><option value="24">24 months</option><option value="36">36 months</option><option value="48">48 months</option><option value="60">60 months</option></select></div>
+        </div>
+        <div class="row">
+          <div class="field"><label for="f-tester">Tested by</label><input id="f-tester" name="tester"></div>
+          <div class="field"><label for="f-instrument">Instrument</label><input id="f-instrument" name="instrument" placeholder="Make, model, serial"></div>
+        </div>
+        <div class="field"><label for="f-notes">Comments / remedial action</label><textarea id="f-notes" name="notes" rows="2"></textarea></div>
+      </div>
+
+      <div class="verdict" id="verdict">
+        <div><span class="label">Overall</span><b id="overall">Incomplete</b><span class="muted small" id="overallWhy"></span></div>
+        <div class="verdict-actions">
+          <button type="button" class="btn ghost" id="resetTest">Clear</button>
+          <button type="submit" class="btn primary" id="saveTest">Save test</button>
+        </div>
+      </div>
+    </form>
+  </section>
+
+  <!-- ================= ASSETS ================= -->
+  <section class="view" id="view-assets" data-title="Assets" hidden>
+    <div class="sec-head"><h1>Assets</h1><span class="muted" id="assetCount"></span></div>
+    <div class="filters">
+      <input type="search" id="assetSearch" placeholder="Search number, description, location">
+      <select id="assetSite"><option value="">All sites</option></select>
+      <select id="assetDue"><option value="">Any status</option><option value="due">Due within 30 days</option><option value="overdue">Overdue</option><option value="fail">Last test failed</option></select>
+    </div>
+    <ul class="list" id="assetList"></ul>
+  </section>
+
+  <section class="view" id="view-asset" data-title="Asset" hidden>
+    <div id="assetDetail"></div>
+  </section>
+
+  <!-- ================= RECORDS ================= -->
+  <section class="view" id="view-records" data-title="Records" hidden>
+    <div class="sec-head"><h1>Records</h1><span class="muted" id="recCount"></span></div>
+    <div class="card filters-card">
+      <div class="row">
+        <div class="field"><label for="r-from">From</label><input type="date" id="r-from"></div>
+        <div class="field"><label for="r-to">To</label><input type="date" id="r-to"></div>
+        <div class="field"><label for="r-site">Site</label><select id="r-site"><option value="">All</option></select></div>
+        <div class="field"><label for="r-location">Location</label><select id="r-location"><option value="">All</option></select></div>
+        <div class="field"><label for="r-result">Result</label><select id="r-result"><option value="">All</option><option value="pass">Pass</option><option value="fail">Fail</option></select></div>
+        <div class="field"><label for="r-tester">Tester</label><select id="r-tester"><option value="">All</option></select></div>
+      </div>
+      <div class="row">
+        <div class="field wide"><label for="r-q">Search</label><input type="search" id="r-q" placeholder="Asset number, description, class, type…"></div>
+        <label class="check end"><input type="checkbox" id="r-latest" checked> Latest test per asset only</label>
+      </div>
+      <div class="actions">
+        <button class="btn" id="exportCsv"><svg viewBox="0 0 24 24"><path d="M12 4v11m-4-4 4 4 4-4M5 20h14"/></svg>CSV</button>
+        <button class="btn" id="exportPdfTable"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"/></svg>PDF table</button>
+        <button class="btn" id="exportPdfEach"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"/></svg>PDF per asset</button>
+        <button class="btn ghost" id="clearFilters">Reset filters</button>
+      </div>
+    </div>
+    <div class="table-wrap"><table class="rec" id="recTable"><thead><tr>
+      <th>Date</th><th>Asset</th><th>Description</th><th>Site / location</th><th>Class</th><th class="n">Earth Ω</th><th class="n">IR MΩ</th><th class="n">Leak mA</th><th>Result</th></tr></thead><tbody></tbody></table></div>
+  </section>
+
+  <!-- ================= CALCULATOR ================= -->
+  <section class="view" id="view-calc" data-title="Limits" hidden>
+    <h1>Limit calculator</h1>
+    <div class="card">
+      <h2>Earth bond limit</h2>
+      <div class="row">
+        <div class="field"><label for="c-csa">Conductor size (mm²)</label><select id="c-csa"><option>0.5</option><option>0.75</option><option selected>1.0</option><option>1.25</option><option>1.5</option><option>2.5</option><option>4.0</option><option>6.0</option></select></div>
+        <div class="field"><label for="c-len">Cord length (m)</label><input id="c-len" inputmode="decimal" value="2"></div>
+        <div class="field"><label for="c-extra">Extra resistance (Ω)</label><input id="c-extra" inputmode="decimal" placeholder="optional" title="e.g. extension lead or test lead not nulled"></div>
+      </div>
+      <div class="calc-out">
+        <div class="calc-res" id="c-iet"></div>
+        <div class="calc-res" id="c-en"></div>
+      </div>
+      <p class="hint">IET: 0.1 Ω plus the resistance of the cord’s protective conductor (copper at 20 °C). BS EN 50699: 0.3 Ω for cords up to 5 m, plus 0.1 Ω for each further 7.5 m, up to 1 Ω. Null your test leads before measuring.</p>
+      <details class="more"><summary>Resistance per metre table</summary><div class="table-wrap"><table class="mini" id="c-table"></table></div></details>
+    </div>
+    <div class="card">
+      <h2>Quick reference</h2>
+      <div class="row">
+        <div class="field"><label for="q-cls">Class</label><select id="q-cls"><option value="I">Class I</option><option value="II">Class II</option><option value="III">Class III</option></select></div>
+        <div class="field"><label for="q-kw">Power (kW)</label><input id="q-kw" inputmode="decimal" placeholder="optional"></div>
+        <label class="check end"><input type="checkbox" id="q-heat"> Heating element</label>
+      </div>
+      <div class="table-wrap"><table class="mini" id="q-table"></table></div>
+    </div>
+  </section>
+
+  <!-- ================= SETTINGS ================= -->
+  <section class="view" id="view-settings" data-title="Settings" hidden>
+    <h1>Settings</h1>
+    <div class="card">
+      <h2>Defaults</h2>
+      <div class="row">
+        <div class="field"><label for="s-company">Company (for reports)</label><input id="s-company"></div>
+        <div class="field"><label for="s-tester">Default tester</label><input id="s-tester"></div>
+      </div>
+      <div class="row">
+        <div class="field"><label for="s-instrument">Default instrument</label><input id="s-instrument"></div>
+        <div class="field"><label for="s-standard">Default standard</label><select id="s-standard"><option value="iet">IET Code of Practice</option><option value="en50699">BS EN 50699</option></select></div>
+        <div class="field"><label for="s-interval">Default retest (months)</label><select id="s-interval"><option>3</option><option>6</option><option>12</option><option>24</option><option>36</option><option>48</option><option>60</option></select></div>
+      </div>
+      <label class="check"><input type="checkbox" id="s-keepSite"> Keep site and location between tests</label>
+    </div>
+    <div class="card">
+      <div class="sec-head"><h2>Pass/fail limits</h2><select id="s-limStd" class="inline-select"><option value="iet">IET CoP</option><option value="en50699">BS EN 50699</option></select></div>
+      <p class="hint">Defaults are from the published standards. Change them only to match your organisation’s test policy or a newer edition.</p>
+      <div class="row" id="limitFields"></div>
+      <div class="actions"><button class="btn ghost" id="resetLimits">Restore defaults</button></div>
+    </div>
+    <div class="card">
+      <h2>Data</h2>
+      <p class="hint" id="storageInfo">Records are stored on this device only. Back up regularly.</p>
+      <div class="actions">
+        <button class="btn" id="backupBtn">Back up (JSON)</button>
+        <label class="btn" for="restoreInput">Restore backup</label>
+        <input type="file" id="restoreInput" accept="application/json,.json" hidden>
+        <button class="btn danger" id="wipeBtn">Delete all data</button>
+      </div>
+    </div>
+  </section>
+  </main>
+
+  <nav class="tabs" aria-label="Sections">
+    <a href="#test" data-tab="test"><svg viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></svg>Test</a>
+    <a href="#assets" data-tab="assets"><svg viewBox="0 0 24 24"><path d="M4 5h16v4H4zM4 11h16v4H4zM4 17h16v3H4z"/></svg>Assets</a>
+    <a href="#records" data-tab="records"><svg viewBox="0 0 24 24"><path d="M6 3h9l4 4v14H6zM9 12h7M9 16h7"/></svg>Records</a>
+    <a href="#calc" data-tab="calc"><svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M8 7h8M8 12h2M14 12h2M8 16h2M14 16h2"/></svg>Limits</a>
+    <a href="#settings" data-tab="settings"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9 7 7M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>Settings</a>
+  </nav>
+</div>
+
+<datalist id="dl-site"></datalist>
+<datalist id="dl-location"></datalist>
+
+<dialog id="scanDlg" class="scan-dlg">
+  <div class="scan-box">
+    <video id="scanVideo" playsinline muted></video>
+    <div class="scan-frame"></div>
+  </div>
+  <p class="scan-msg" id="scanMsg">Point the camera at the barcode or QR code</p>
+  <div class="actions center"><button class="btn" id="scanTorch" hidden>Torch</button><button class="btn" id="scanClose">Cancel</button></div>
+</dialog>
+
+<dialog id="photoDlg" class="photo-dlg">
+  <img id="photoBig" alt="">
+  <div class="actions center"><button class="btn danger" id="photoDel">Remove</button><button class="btn" id="photoClose">Close</button></div>
+</dialog>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script src="standards.js"></script>
+<script src="vendor/jspdf.umd.min.js" defer></script>
+<script src="vendor/jspdf.plugin.autotable.min.js" defer></script>
+<script src="vendor/zxing.min.js" defer></script>
+<script src="app.js" defer></script>
+</body>
+</html>
