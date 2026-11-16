@@ -1,0 +1,87 @@
+<!doctype html>
+<html lang="en-GB">
+<head>
+<meta charset="utf-8">
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' data:; style-src 'self' 'unsafe-inline'; script-src 'self'">
+<title>PAT Manager</title>
+<link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<svg width="0" height="0" style="position:absolute" aria-hidden="true">
+  <symbol id="i-bolt" viewBox="0 0 24 24"><path d="M13 2 4 14h7l-1 8 9-12h-7z"/></symbol>
+  <symbol id="i-test" viewBox="0 0 24 24"><path d="M9 3v6l-5 9a2 2 0 0 0 2 3h12a2 2 0 0 0 2-3l-5-9V3M8 3h8M7 15h10"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 24 24"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="i-box" viewBox="0 0 24 24"><path d="M21 8 12 3 3 8v8l9 5 9-5zM3 8l9 5 9-5M12 13v8"/></symbol>
+  <symbol id="i-dash" viewBox="0 0 24 24"><path d="M3 3h8v8H3zM13 3h8v5h-8zM13 10h8v11h-8zM3 13h8v8H3z"/></symbol>
+  <symbol id="i-list" viewBox="0 0 24 24"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></symbol>
+  <symbol id="i-cal" viewBox="0 0 24 24"><path d="M3 5h18v16H3zM3 10h18M8 3v4M16 3v4"/></symbol>
+  <symbol id="i-wrench" viewBox="0 0 24 24"><path d="M14.7 6.3a4 4 0 0 0 5 5L22 14l-8 8-2.3-2.3a4 4 0 0 0-5-5L2 10l8-8 2.3 2.3a4 4 0 0 0 2.4 2z" transform="scale(.9) translate(1.3 1.3)"/></symbol>
+  <symbol id="i-hist" viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7L3 8M3 3v5h5M12 7v5l3 3"/></symbol>
+  <symbol id="i-doc" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8zM14 2v6h6M8 13h8M8 17h8M8 9h2"/></symbol>
+  <symbol id="i-gauge" viewBox="0 0 24 24"><path d="M12 14l4-4M3.3 17a9 9 0 1 1 17.4 0M12 14h.01"/></symbol>
+  <symbol id="i-users" viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2M9 11a4 4 0 1 0 0-8 4 4 0 0 0 0 8M23 21v-2a4 4 0 0 0-3-3.9M16 3.1a4 4 0 0 1 0 7.8"/></symbol>
+  <symbol id="i-cog" viewBox="0 0 24 24"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6z"/><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.8l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.8-.3 1.7 1.7 0 0 0-1 1.5V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1.1-1.5 1.7 1.7 0 0 0-1.8.3l-.1.1a2 2 0 1 1-2.8-2.8l.1-.1a1.7 1.7 0 0 0 .3-1.8 1.7 1.7 0 0 0-1.5-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.5-1.1 1.7 1.7 0 0 0-.3-1.8l-.1-.1a2 2 0 1 1 2.8-2.8l.1.1a1.7 1.7 0 0 0 1.8.3H9a1.7 1.7 0 0 0 1-1.5V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.5 1.7 1.7 0 0 0 1.8-.3l.1-.1a2 2 0 1 1 2.8 2.8l-.1.1a1.7 1.7 0 0 0-.3 1.8V9a1.7 1.7 0 0 0 1.5 1H21a2 2 0 1 1 0 4h-.1a1.7 1.7 0 0 0-1.5 1z"/></symbol>
+  <symbol id="i-save" viewBox="0 0 24 24"><path d="M19 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11l5 5v11a2 2 0 0 1-2 2zM17 21v-8H7v8M7 3v5h8"/></symbol>
+  <symbol id="i-import" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4M7 10l5 5 5-5M12 15V3"/></symbol>
+  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M20.6 13.4 13.4 20.6a2 2 0 0 1-2.8 0L2 12V2h10l8.6 8.6a2 2 0 0 1 0 2.8zM7 7h.01"/></symbol>
+  <symbol id="i-building" viewBox="0 0 24 24"><path d="M3 21h18M5 21V5l7-3v19M19 21V9l-7-3M9 9h.01M9 13h.01M9 17h.01"/></symbol>
+  <symbol id="i-pin" viewBox="0 0 24 24"><path d="M12 22s7-6.2 7-12a7 7 0 1 0-14 0c0 5.8 7 12 7 12zM12 12a2 2 0 1 0 0-4 2 2 0 0 0 0 4z"/></symbol>
+  <symbol id="i-room" viewBox="0 0 24 24"><path d="M3 21V3h18v18zM3 9h18M9 21V9"/></symbol>
+  <symbol id="i-edit" viewBox="0 0 24 24"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4z"/></symbol>
+  <symbol id="i-trash" viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></symbol>
+  <symbol id="i-print" viewBox="0 0 24 24"><path d="M6 9V2h12v7M6 18H4a2 2 0 0 1-2-2v-5a2 2 0 0 1 2-2h16a2 2 0 0 1 2 2v5a2 2 0 0 1-2 2h-2M6 14h12v8H6z"/></symbol>
+  <symbol id="i-search" viewBox="0 0 24 24"><path d="M11 19a8 8 0 1 0 0-16 8 8 0 0 0 0 16zM21 21l-4.3-4.3"/></symbol>
+  <symbol id="i-move" viewBox="0 0 24 24"><path d="M5 9l-3 3 3 3M9 5l3-3 3 3M15 19l-3 3-3-3M19 9l3 3-3 3M2 12h20M12 2v20"/></symbol>
+</svg>
+
+<div class="shell">
+  <header class="toolbar">
+    <div class="brand"><svg viewBox="0 0 24 24"><use href="#i-bolt"/></svg>PAT Manager</div>
+    <button class="tb primary" data-cmd="new-test" title="Test an appliance (Ctrl+T)"><svg class="i"><use href="#i-test"/></svg>New Test</button>
+    <button class="tb" data-cmd="new-asset" title="Add an asset without testing (Ctrl+N)"><svg class="i"><use href="#i-box"/></svg>New Asset</button>
+    <button class="tb" data-cmd="new-client" title="Add a client"><svg class="i"><use href="#i-building"/></svg>New Client</button>
+    <div class="tb-sep"></div>
+    <button class="tb" data-cmd="go:due" title="Retest planner"><svg class="i"><use href="#i-cal"/></svg>Retests</button>
+    <button class="tb" data-cmd="go:reports" title="Certificates & reports"><svg class="i"><use href="#i-print"/></svg>Reports</button>
+    <button class="tb" data-cmd="labels" title="Print asset labels"><svg class="i"><use href="#i-tag"/></svg>Labels</button>
+    <div class="tb-sep"></div>
+    <button class="tb" data-cmd="import" title="Import CSV or a PAT Test Log backup"><svg class="i"><use href="#i-import"/></svg>Import</button>
+    <button class="tb" data-cmd="backup" title="Back up the database (Ctrl+B)"><svg class="i"><use href="#i-save"/></svg>Backup</button>
+    <div class="spacer"></div>
+    <div class="quick"><svg class="i" style="color:var(--muted)"><use href="#i-search"/></svg><input id="quickFind" type="search" placeholder="Find asset no. — Enter to open"></div>
+  </header>
+
+  <aside class="side">
+    <nav class="nav" id="nav">
+      <a data-view="dashboard"><svg class="i"><use href="#i-dash"/></svg>Dashboard</a>
+      <a data-view="assets"><svg class="i"><use href="#i-list"/></svg>Asset Register</a>
+      <a data-view="due"><svg class="i"><use href="#i-cal"/></svg>Retest Planner <span class="badge warn" id="badgeDue" hidden></span></a>
+      <a data-view="failures"><svg class="i"><use href="#i-wrench"/></svg>Failures &amp; Repairs <span class="badge" id="badgeFail" hidden></span></a>
+      <a data-view="history"><svg class="i"><use href="#i-hist"/></svg>Test History</a>
+      <a data-view="reports"><svg class="i"><use href="#i-doc"/></svg>Reports</a>
+      <a data-view="clients"><svg class="i"><use href="#i-building"/></svg>Clients &amp; Sites</a>
+      <a data-view="instruments"><svg class="i"><use href="#i-gauge"/></svg>Instruments <span class="badge warn" id="badgeCal" hidden></span></a>
+      <a data-view="engineers"><svg class="i"><use href="#i-users"/></svg>Engineers</a>
+      <a data-view="settings"><svg class="i"><use href="#i-cog"/></svg>Settings</a>
+    </nav>
+    <div class="tree-head"><span>Clients / Sites / Locations</span><button id="treeAdd" title="Add client">＋</button></div>
+    <div class="tree" id="tree"></div>
+  </aside>
+
+  <main class="main" id="main"></main>
+
+  <footer class="statusbar">
+    <span id="sbScope">All clients</span>
+    <span id="sbCounts"></span>
+    <span class="grow" id="sbFile"></span>
+    <span id="sbSaved">Loading…</span>
+  </footer>
+</div>
+
+<div class="toast" id="toast" role="status"></div>
+<script src="standards.js"></script>
+<script src="barcode.js"></script>
+<script src="reports.js"></script>
+<script src="app.js"></script>
+</body>
+</html>

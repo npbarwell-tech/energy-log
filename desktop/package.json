@@ -1,0 +1,53 @@
+{
+  "name": "pat-manager",
+  "productName": "PAT Manager",
+  "version": "1.0.0",
+  "description": "Desktop PAT (portable appliance testing) management for Windows",
+  "author": "PAT Manager",
+  "main": "main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis portable",
+    "dist:dir": "electron-builder --win dir"
+  },
+  "devDependencies": {
+    "electron": "44.10.1",
+    "electron-builder": "26.18.1"
+  },
+  "build": {
+    "appId": "uk.patmanager.desktop",
+    "productName": "PAT Manager",
+    "copyright": "PAT Manager",
+    "directories": {
+      "output": "dist",
+      "buildResources": "build"
+    },
+    "files": [
+      "main.js",
+      "preload.js",
+      "src/**/*",
+      "package.json"
+    ],
+    "win": {
+      "target": [
+        "nsis",
+        "portable"
+      ],
+      "icon": "build/icon.png"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "perMachine": false,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "shortcutName": "PAT Manager",
+      "artifactName": "PAT-Manager-Setup-${version}.${ext}"
+    },
+    "portable": {
+      "artifactName": "PAT-Manager-Portable-${version}.${ext}"
+    },
+    "publish": null
+  }
+}
